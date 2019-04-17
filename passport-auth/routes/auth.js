@@ -3,50 +3,32 @@ const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const router = express.Router();
 const zxcvbn = require('zxcvbn');
+const passport = require('passport');
 
 router.get('/register', (req, res, next) => {
   res.render('auth/register');
 });
 
 router.get('/login', (req, res, next) => {
-  res.render('auth/login');
-});
-
-router.get('/logout', (req, res, next) => {
-  req.session.destroy(() => {
-    res.redirect('/');
+  res.render('auth/login', {
+    errorMessage: req.flash('error')
   });
 });
 
-router.post('/login', (req, res, next) => {
-  const { username, password } = req.body;
-  if (username === '' || password === '') {
-    res.render('auth/login', {
-      errorMessage: 'You need a username and a password to login'
-    });
-    return;
-  }
-
-  User.findOne({ username })
-    .then(user => {
-      if (!user) {
-        res.render('auth/login', {
-          errorMessage: 'This username was not found'
-        });
-      }
-      if (bcrypt.compareSync(password, user.password)) {
-        req.session.loggedInUser = user;
-        res.redirect('/secret');
-      } else {
-        res.render('auth/login', {
-          errorMessage: 'Wrong password'
-        });
-      }
-    })
-    .catch(err => {
-      console.error('Error while finding user', err);
-    });
+router.get('/logout', (req, res, next) => {
+  req.logout();
+  res.redirect('/');
 });
+
+router.post(
+  '/login',
+  passport.authenticate('local', {
+    successRedirect: '/',
+    failureRedirect: '/auth/login',
+    failureFlash: true,
+    passReqToCallback: true
+  })
+);
 
 router.post('/register', (req, res, next) => {
   const username = req.body.username;

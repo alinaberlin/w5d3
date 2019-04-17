@@ -9,7 +9,11 @@ const mongoose = require('mongoose');
 const logger = require('morgan');
 const path = require('path');
 const session = require('express-session');
-const MongoStore = require('connect-mongo')(session);
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const User = require('./models/user');
+const bcrypt = require('bcrypt');
+const flash = require('connect-flash');
 
 mongoose
   .connect('mongodb://localhost/basic-auth', { useNewUrlParser: true })
@@ -37,15 +41,45 @@ app.use(cookieParser());
 app.use(
   session({
     secret: 'keyboard cat',
-    cookie: {
-      maxAge: 60000
-    },
-    store: new MongoStore({
-      mongooseConnection: mongoose.connection,
-      ttl: 24 * 60 * 60
-    })
+    resave: false,
+    saveUninitialized: false
   })
 );
+
+passport.serializeUser((user, done) => {
+  done(null, user._id);
+});
+
+passport.deserializeUser((_id, done) => {
+  User.findOne({ _id })
+    .then(user => {
+      done(null, user);
+    })
+    .catch(err => {
+      done(err);
+    });
+});
+
+passport.use(
+  new LocalStrategy((username, password, done) => {
+    User.findOne({ username })
+      .then(user => {
+        if (!user || !bcrypt.compareSync(password, user.password)) {
+          done(null, false, { message: 'Wrong credentials' });
+        }
+        // Success
+        done(null, user);
+      })
+      .catch(err => {
+        done(err);
+      });
+  })
+);
+
+app.use(flash());
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Express View engine setup
 
 app.use(
