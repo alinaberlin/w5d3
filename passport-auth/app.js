@@ -66,7 +66,9 @@ app.locals.title = 'Passport Auth';
 
 const index = require('./routes/index');
 const auth = require('./routes/auth');
+const protected = require('./routes/protected');
 app.use('/', index);
-app.use('/', auth);
+app.use('/', protected);
+app.use('/auth', auth);
 
 module.exports = app;

@@ -4,14 +4,6 @@ const User = require('../models/user');
 const router = express.Router();
 const zxcvbn = require('zxcvbn');
 
-router.get('/secret', (req, res, next) => {
-  if (req.session.loggedInUser) {
-    res.render('auth/secret');
-  } else {
-    res.render('error', { errorMessage: 'This is a protected route' });
-  }
-});
-
 router.get('/register', (req, res, next) => {
   res.render('auth/register');
 });
@@ -92,7 +84,7 @@ router.post('/register', (req, res, next) => {
       }
       User.create({ username, password: hashPassword })
         .then(() => {
-          res.redirect('/secret');
+          res.redirect('/');
         })
         .catch(err => {
           console.error('Error while registering new user', err);
